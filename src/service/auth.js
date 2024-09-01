@@ -76,16 +76,18 @@ const logout = async (req, res) => {
 //회원탈퇴
 const cancelAccount = async (req, res) => {
   const token = req.headers["authorization"].split("")[1];
-  const { user_id } = req.params
 
   if (token) {
     try {
-      const user = await db.get(user_id)
+      const decoded = jwt.verify(token, secretKey)
+      const userId = decoded.id
+
+      const user = await User.findByPk(userId)
 
       if(!user) {
         return req.status(404).send("사용자를 찾을 수 없습니다")
       }
-      await db.delete(user_id)
+      await db.delete(user.user_id)
       
       return res.status(200).send("회원탈퇴가 성공적으로 완료되었습니다")
     }
