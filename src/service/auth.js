@@ -1,29 +1,25 @@
 const { User } = require("../model/user");
 const jwt = require("jsonwebtoken");
 
-const signup = (req, res) => {
+const signup = async (req, res) => {
   const { user_id, password } = req.body;
 
-  const exists = db.get(user_id);
-
-  if (exists) {
-    res.status(400).send("이미 존재하는 아이디입니다");
-    return;
-  }
-
   try {
-    const newUser = { user_id, password };
-    db.set(user_id, password);
+    const exists = await db.get(user_id);
 
-    res.redirect("/login");
+    if (exists) {
+      return res.status(400).send("이미 존재하는 아이디입니다");
+    }
 
-    return req.status(201).json({
-      id,
+    await db.set(user_id, password);
+
+    return res.status(201).json({
+      id: user_id,
       password,
     });
-    
   } catch (err) {
     console.error("회원가입 오류", err);
+    return res.status(500).send("회원가입 중 오류 발생");
   }
 };
 
