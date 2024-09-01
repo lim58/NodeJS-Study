@@ -4,18 +4,24 @@ const { createToken } = require("../middleware/jwt")
 
 //회원가입
 const signup = async (req, res) => {
-  const { user_id, password } = req.body;
+  const { email, user_name, user_id, password } = req.body;
 
   try {
-    const exists = await db.get(user_id);
+    const exists = await db.get(email);
+    const idCheck = await db.get(user_id);
 
     if (exists) {
-      return res.status(409).send("이미 존재하는 아이디입니다");
+      return res.status(409).send("이미 존재하는 유저입니다");
     }
 
-    await db.set(user_id, password);
+    if(idCheck) {
+      return res.status(409).send("이미 존재하는 아이디입니다")
+    }
+
+    await db.set(email, user_id, password);
 
     return res.status(201).json({
+      email,
       id: user_id,
       password,
     });
