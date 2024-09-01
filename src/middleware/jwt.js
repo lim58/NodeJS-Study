@@ -2,12 +2,20 @@ const jwt = require("jsonwebtoken");
 
 const secretKey = process.env.JWT_SECRET_KEY || 'secretKey';
 
+//JWT 토큰 생성
 const createToken = (user_id) => {
   const token = jwt.sign({id : user_id}, secretKey, { expiresIn: "1h" });
   return token;
 };
 
-const refreshToken = (token) => {
+//토큰 재발급
+const refreshToken = async (req, res) => {
+  const token = await req.get('authorization').split(' ')[1]
+
+  if(!req.payload) {
+    return res.status(400).send("토큰을 찾을 수 없습니다")
+  }
+
   try {
     const decoded = jwt.verify(token, secretKey);
 
@@ -16,15 +24,16 @@ const refreshToken = (token) => {
     };
 
     const newToken = createToken(payload);
-
     return newToken;
+
   } catch (err) {
     console.error("ERROR RefreshToken", err);
     return null;
   }
 };
 
-const validateAccess = () => {
+//토큰 검증
+const validateAccess = (req, res) => {
   const userToken = req.headers["authorization"]?.split("")[1];
 
   if (!userToken || userToken === "null") {
@@ -37,10 +46,8 @@ const validateAccess = () => {
     return;
   }
   try {
-    const jwtDecoded = jwt.verify(userToken, secretKey)
-    
-    const id = jwtDecoded.id
-    req.currentId = id
+    req.payload = jwt.verify(userToken, secretKey)
+    next()
 
   } catch (err) {
     console.error("ERROR ValidateAccess", err);
