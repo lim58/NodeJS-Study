@@ -1,9 +1,10 @@
 const express = require("express");
-const dotenv = require("dotenv");
 const cors = require("cors");
-const path = require("path");
+const router = require("./controller/index")
+const dotenv = require("dotenv")
+const {sequelize} = require("./model")
 
-dotenv.configDotenv();
+dotenv.configDotenv()
 
 const PORT = Number(process.env.PORT ?? 8000);
 
@@ -17,14 +18,17 @@ app.use(cors({
     credentials: true
 }));
 
-// app.use("/", router)
+app.use("/", router)
 
-app.use("/", (req, res) => {
-    res.status(200).json({
-        "server" : "OK"
-    })
-})
-
-app.listen(PORT, () => {
+app.listen(PORT, async()=> {
     console.log(`Server is listening on port ${PORT}`)
+
+    await sequelize
+        .sync({force:false})
+        .then(()=> {
+            console.log(`DB has init`)
+        })
+        .catch((err) => {
+            console.error(err)
+        })
 })
