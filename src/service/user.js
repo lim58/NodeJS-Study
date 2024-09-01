@@ -3,7 +3,36 @@ const { User } = require("../model/user")
 const secretKey = process.env.JWT_SECRET_KEY || "secretKey"
 
 //회원정보 수정
-const modifyProfile = (req, res) => {};
+const modifyProfile = async (req, res) => {
+    const token = req.headers["authorization"].split("")[1]
+    
+   const { newUserName } = req.body
+
+    if(token) {
+        try {
+            const decoded = jwt.verify(token, secretKey)
+            const userId = decoded.id
+
+            const user = await User.findByPk(userId)
+
+            if(!user) {
+                return res.status(404).send("사용자를 찾을 수 없습니다")
+            }
+
+            user.user_name = newUserName
+            await user.save()
+
+            return res.status(200).send("회원정보 수정이 성공적으로 완료되었습니다")
+        }
+        catch(err) {
+            console.log("회원정보 수정 오류", err)
+            return res.status(500).send("회원정보를 수정하는 과정에서 오류가 발생하였습니다")
+        }
+    }
+    else {
+        res.status(400).send("토큰이 없습니다");
+    }
+};
 
 //사용자 정보 조회
 const userInfo = async (req, res) => {
