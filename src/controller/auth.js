@@ -1,5 +1,4 @@
-const express = require("express")()
-const router = express.Router()
+const router = require("express")()
 const logic = require("../service/auth")
 
 router.post("/signup", logic.signup)
