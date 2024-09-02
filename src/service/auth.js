@@ -1,29 +1,30 @@
-const { User } = require("../model/user");
 const jwt = require("jsonwebtoken");
 const { createToken } = require("../middleware/jwt");
+const { saveUser, findOneUserByUserId } = require("../model/repository");
+const { user } = require("../model/index")
+const bcrypt = require("bcrypt")
 
 //회원가입
 const signup = async (req, res) => {
   const { email, user_name, user_id, password } = req.body;
 
   try {
-    const exists = await db.get(email);
-    const idCheck = await db.get(user_id);
+    const thisUser = await findOneUserByUserId(user_id);
+    const existEmail = await user.findOne({ where: { email } });
 
-    if (exists) {
-      return res.status(409).send("이미 존재하는 유저입니다");
-    }
-
-    if (idCheck) {
+    if (thisUser) {
       return res.status(409).send("이미 존재하는 아이디입니다");
     }
+    if(existEmail) {
+      return res.status(409).send("이미 존재하는 이메일 입니다")
+    }
 
-    await db.set(email, user_id, password);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = (await saveUser(email, user_name, user_id, hashedPassword)).id;
 
     return res.status(201).json({
-      email,
-      id: user_id,
-      password,
+      id: userId,
+      message: "회원가입 성공!"
     });
   } catch (err) {
     console.error("회원가입 오류", err);
@@ -36,13 +37,15 @@ const login = async (req, res) => {
   const { user_id, password } = req.body;
 
   try {
-    const user = await db.get(user_id);
-
-    if (!user) {
+    const isUser = await findOneUserByUserId(user_id);
+    console.log(isUser)
+    if (!isUser) {
       return res.status(404).send("사용자를 찾을 수 없습니다");
     }
-    if (user.password !== password) {
-      return res.status(409).send("잘못된 비밀번호 입니다");
+
+    const isPasswordValid = await bcrypt.compare(password, isUser.password)
+    if (!isPasswordValid) {
+      return res.status(401).send("비밀번호가 일치하지 않습니다");
     }
 
     const token = createToken(user_id);
@@ -69,7 +72,7 @@ const logout = async (req, res) => {
       return res.status(500).send("로그아웃 중 오류 발생");
     }
   } else {
-    res.status(400).send("토큰이 없습니다");
+    res.status(401).send("토큰이 없습니다");
   }
 };
 
@@ -79,25 +82,23 @@ const cancelAccount = async (req, res) => {
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, secretKey)
-      const userId = decoded.id
+      const decoded = jwt.verify(token, secretKey);
+      const userId = decoded.id;
 
-      const user = await User.findByPk(userId)
+      const user = await user.findByPk(userId);
 
-      if(!user) {
-        return req.status(404).send("사용자를 찾을 수 없습니다")
+      if (!user) {
+        return req.status(404).send("사용자를 찾을 수 없습니다");
       }
-      await db.delete(user.user_id)
-      
-      return res.status(200).send("회원탈퇴가 성공적으로 완료되었습니다")
+      await db.delete(user.user_id);
+
+      return res.status(200).send("회원탈퇴가 성공적으로 완료되었습니다");
+    } catch (err) {
+      console.log("회원탈퇴 오류", err);
+      return res.status(500).send("회원가입 중 오류 발생");
     }
-    catch(err){
-      console.log("회원탈퇴 오류", err)
-      return res.status(500).send("회원가입 중 오류 발생")
-    }
-    
   } else {
-    res.status(400).send("토큰이 없습니다");
+    res.status(401).send("토큰이 없습니다");
   }
 };
 
