@@ -3,6 +3,7 @@ const { createToken } = require("../middleware/jwt");
 const { saveUser, findOneUserByUserId } = require("../model/repository");
 const { user } = require("../model/index")
 const bcrypt = require("bcrypt")
+const { redisCli } = require("../config/redis")
 
 //회원가입
 const signup = async (req, res) => {
