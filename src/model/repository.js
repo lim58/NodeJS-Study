@@ -23,7 +23,6 @@ const findOneUserByUserId = async (user_id) => {
     console.log("this user is not defined")
     return undefined;
   }
-  console.log(thisUser)
   return thisUser;
 };
 
